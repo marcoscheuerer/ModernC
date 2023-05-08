@@ -1,22 +1,30 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdlib.h>
 
 #define NUM_THREADS 3
 
 void* function(void *args)
 {
-    const pthread_t this_thread = pthread_self();
+    //const pthread_t this_thread = pthread_self();
+    //printf("Called from thread %u\n", (uint32_t)this_thread);
 
-    printf("Called from thread %u\n", (uint32_t)this_thread);
+    const int32_t arg_i32 = *((int *)args);
 
-    return NULL;
+    printf("Argument: %d\n", arg_i32);
+
+    int *result = (int *)malloc(sizeof(int));
+    *result = arg_i32 * 2;
+
+    pthread_exit((void *)result);
 }
 
 int main()
 {
     pthread_t threads[NUM_THREADS];
     int32_t inputs[NUM_THREADS];
+    int32_t *results[NUM_THREADS];
 
     for (int32_t i = 0; i < NUM_THREADS; i++)
     {
@@ -25,20 +33,18 @@ int main()
 
     for (int32_t i = 0; i < NUM_THREADS; i++)
     {
-        pthread_create(&threads[i], NULL, (void *)(&inputs[i]), NULL);
+        pthread_create(&threads[i], NULL, &function, (void *)(&inputs[i]));
     }
 
-    pthread_t thread1;
-    pthread_t thread2;
+    for (int32_t i = 0; i < NUM_THREADS; i++)
+    {
+        pthread_join(threads[i], (void *)&results[i]);
+    }
 
-    int32_t num1 = 2;
-    int32_t num2 = 3;
-
-    pthread_create(&thread1, NULL, &function, NULL);
-    pthread_create(&thread2, NULL, &function, NULL);
-
-    pthread_join(thread1, NULL);
-    pthread_join(thread2, NULL);
+    for (int32_t i = 0; i < NUM_THREADS; i++)
+    {
+        printf("Result %d: %d\n", i, *results[i]);
+    }
 
     return 0;
 }
